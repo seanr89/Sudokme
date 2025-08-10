@@ -39,6 +39,7 @@ class SudokuScreenState extends State<SudokuScreen> {
   int? _selectedRow;
   int? _selectedCol;
   late List<List<bool>> _initialGrid;
+  bool _showSolution = false;
 
   @override
   void initState() {
@@ -152,6 +153,20 @@ class SudokuScreenState extends State<SudokuScreen> {
       appBar: AppBar(
         title: const Text('Sudoku'),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  _showSolution = true;
+                });
+              },
+              child: const Text(
+                'Show Solved',
+                style: TextStyle(color: Colors.black),
+              ),
+            ),
+          ),
           Center(
             child: Text(
               'Mistakes: ${_sudokuLogic.mistakes}/3',
@@ -188,18 +203,24 @@ class SudokuScreenState extends State<SudokuScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border.all(),
-                          color: _selectedRow == row && _selectedCol == col
-                              ? Colors.blue.withAlpha(128)
-                              : (_selectedNumber != null &&
-                                      _selectedNumber != 0 &&
-                                      _selectedNumber ==
-                                          _sudokuLogic.grid[row][col])
-                                  ? Colors.blue.withAlpha(64)
-                                  : Colors.white,
+                          color: _showSolution && !_initialGrid[row][col]
+                              ? Colors.yellow
+                              : _selectedRow == row && _selectedCol == col
+                                  ? Colors.blue.withAlpha(128)
+                                  : (_selectedNumber != null &&
+                                          _selectedNumber != 0 &&
+                                          _selectedNumber ==
+                                              _sudokuLogic.grid[row][col])
+                                      ? Colors.blue.withAlpha(64)
+                                      : Colors.white,
                         ),
                         child: Center(
                           child: Text(
-                            number == 0 ? '' : number.toString(),
+                            _showSolution
+                                ? _sudokuLogic.getSolution()[row][col].toString()
+                                : number == 0
+                                    ? ''
+                                    : number.toString(),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: _initialGrid[row][col]

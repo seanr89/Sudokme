@@ -128,4 +128,8 @@ class SudokuLogic {
     }
     return true;
   }
+
+  List<List<int>> getSolution() {
+    return solutionGrid;
+  }
 }
