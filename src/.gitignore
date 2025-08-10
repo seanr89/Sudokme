@@ -29,14 +29,14 @@
 /build/
 
 # Android related
-**/android/**
-**/android/**/gradle-wrapper.jar
-**/android/.gradle
-**/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
-**/android/local.properties
-**/android/**/GeneratedPluginRegistrant.java
+# **/android/**
+# **/android/**/gradle-wrapper.jar
+# **/android/.gradle
+# **/android/captures/
+# **/android/gradlew
+# **/android/gradlew.bat
+# **/android/local.properties
+# **/android/**/GeneratedPluginRegistrant.java
 
 # iOS/XCode related
 **/ios/**
@@ -82,4 +82,4 @@
 **/linux/**
 
 # web related
-**/web/**
+# **/web/**
