@@ -202,7 +202,20 @@ class SudokuScreenState extends State<SudokuScreen> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          border: Border.all(),
+                          border: Border(
+                            top: BorderSide(
+                              width: (row == 0) ? 2.0 : 1.0,
+                            ),
+                            left: BorderSide(
+                              width: (col == 0) ? 2.0 : 1.0,
+                            ),
+                            right: BorderSide(
+                              width: (col + 1) % 3 == 0 ? 2.0 : 1.0,
+                            ),
+                            bottom: BorderSide(
+                              width: (row + 1) % 3 == 0 ? 2.0 : 1.0,
+                            ),
+                          ),
                           color: _showSolution && !_initialGrid[row][col]
                               ? Colors.yellow
                               : _selectedRow == row && _selectedCol == col
