@@ -57,11 +57,7 @@ class SudokuScreenState extends State<SudokuScreen> {
         return;
       }
       setState(() {
-        if (_sudokuLogic.validateMove(
-          _selectedRow!,
-          _selectedCol!,
-          number,
-        )) {
+        if (_sudokuLogic.validateMove(_selectedRow!, _selectedCol!, number)) {
           _sudokuLogic.grid[_selectedRow!][_selectedCol!] = number;
           _selectedNumber = number;
           if (_sudokuLogic.isSolved()) {
@@ -203,12 +199,8 @@ class SudokuScreenState extends State<SudokuScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border(
-                            top: BorderSide(
-                              width: (row == 0) ? 2.0 : 1.0,
-                            ),
-                            left: BorderSide(
-                              width: (col == 0) ? 2.0 : 1.0,
-                            ),
+                            top: BorderSide(width: (row == 0) ? 2.0 : 1.0),
+                            left: BorderSide(width: (col == 0) ? 2.0 : 1.0),
                             right: BorderSide(
                               width: (col + 1) % 3 == 0 ? 2.0 : 1.0,
                             ),
@@ -219,21 +211,23 @@ class SudokuScreenState extends State<SudokuScreen> {
                           color: _showSolution && !_initialGrid[row][col]
                               ? Colors.yellow
                               : _selectedRow == row && _selectedCol == col
-                                  ? Colors.blue.withAlpha(128)
-                                  : (_selectedNumber != null &&
-                                          _selectedNumber != 0 &&
-                                          _selectedNumber ==
-                                              _sudokuLogic.grid[row][col])
-                                      ? Colors.blue.withAlpha(64)
-                                      : Colors.white,
+                              ? Colors.blue.withAlpha(128)
+                              : (_selectedNumber != null &&
+                                    _selectedNumber != 0 &&
+                                    _selectedNumber ==
+                                        _sudokuLogic.grid[row][col])
+                              ? Colors.blue.withAlpha(64)
+                              : Colors.white,
                         ),
                         child: Center(
                           child: Text(
                             _showSolution
-                                ? _sudokuLogic.getSolution()[row][col].toString()
+                                ? _sudokuLogic
+                                      .getSolution()[row][col]
+                                      .toString()
                                 : number == 0
-                                    ? ''
-                                    : number.toString(),
+                                ? ''
+                                : number.toString(),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: _initialGrid[row][col]
@@ -281,7 +275,7 @@ class SudokuScreenState extends State<SudokuScreen> {
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

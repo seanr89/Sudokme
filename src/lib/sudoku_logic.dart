@@ -8,6 +8,7 @@ class SudokuLogic {
   int mistakes = 0;
 
   void generateSudoku(Difficulty difficulty) {
+    print('generateSudoku called with difficulty: $difficulty');
     grid = List.generate(9, (_) => List.generate(9, (_) => 0));
     _fillGrid(grid);
     solutionGrid = List.generate(9, (i) => List.from(grid[i]));
@@ -37,16 +38,17 @@ class SudokuLogic {
   }
 
   void _removeNumbers(Difficulty difficulty) {
+    print('removeNumbers called with difficulty: $difficulty');
     int numbersToRemove = 0;
     switch (difficulty) {
       case Difficulty.easy:
-        numbersToRemove = 40;
+        numbersToRemove = 30;
         break;
       case Difficulty.medium:
-        numbersToRemove = 50;
+        numbersToRemove = 40;
         break;
       case Difficulty.hard:
-        numbersToRemove = 60;
+        numbersToRemove = 50;
         break;
     }
 
