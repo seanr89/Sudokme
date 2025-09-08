@@ -157,15 +157,12 @@ class SudokuScreenState extends State<SudokuScreen> {
                   _showSolution = true;
                 });
               },
-              child: const Text(
-                'Show Solved',
-                style: TextStyle(color: Colors.black),
-              ),
+              child: const Text('Solve', style: TextStyle(color: Colors.black)),
             ),
           ),
           Center(
             child: Text(
-              'Mistakes: ${_sudokuLogic.mistakes}/3',
+              'Errors: ${_sudokuLogic.mistakes}/3',
               style: const TextStyle(fontSize: 18),
             ),
           ),
