@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sudokme/difficulty_screen.dart';
@@ -13,6 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Sudoku',
       theme: ThemeData(
         primaryColor: Colors.blue[800],
@@ -40,6 +43,8 @@ class SudokuScreenState extends State<SudokuScreen> {
   int? _selectedCol;
   late List<List<bool>> _initialGrid;
   bool _showSolution = false;
+  Timer? _timer;
+  int _secondsElapsed = 0;
 
   @override
   void initState() {
@@ -49,6 +54,29 @@ class SudokuScreenState extends State<SudokuScreen> {
       9,
       (row) => List.generate(9, (col) => _sudokuLogic.grid[row][col] != 0),
     );
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _secondsElapsed = 0;
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _secondsElapsed++;
+      });
+    });
+  }
+
+  String _formatDuration(int seconds) {
+    final minutes = (seconds / 60).floor().toString().padLeft(2, '0');
+    final remainingSeconds = (seconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$remainingSeconds';
   }
 
   void _onNumberSelected(int number) {
@@ -61,6 +89,7 @@ class SudokuScreenState extends State<SudokuScreen> {
           _sudokuLogic.grid[_selectedRow!][_selectedCol!] = number;
           _selectedNumber = number;
           if (_sudokuLogic.isSolved()) {
+            _timer?.cancel();
             _showWinDialog();
           }
           ScaffoldMessenger.of(context).showSnackBar(
@@ -78,6 +107,7 @@ class SudokuScreenState extends State<SudokuScreen> {
             ),
           );
           if (_sudokuLogic.mistakes >= 3) {
+            _timer?.cancel();
             _showGameOverDialog();
           }
         }
@@ -104,6 +134,7 @@ class SudokuScreenState extends State<SudokuScreen> {
                     (col) => _sudokuLogic.grid[row][col] != 0,
                   ),
                 );
+                _startTimer();
               });
               Navigator.of(context).pop();
             },
@@ -133,6 +164,7 @@ class SudokuScreenState extends State<SudokuScreen> {
                     (col) => _sudokuLogic.grid[row][col] != 0,
                   ),
                 );
+                _startTimer();
               });
               Navigator.of(context).pop();
             },
@@ -238,6 +270,13 @@ class SudokuScreenState extends State<SudokuScreen> {
                   },
                   itemCount: 81,
                 ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                'Time: ${_formatDuration(_secondsElapsed)}',
+                style: const TextStyle(fontSize: 18),
               ),
             ),
             Padding(

@@ -9,9 +9,7 @@ class DifficultyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Select Difficulty'),
-      ),
+      appBar: AppBar(title: const Text('Select Difficulty')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 40.0),
@@ -20,7 +18,7 @@ class DifficultyScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Text(
-                'Choose your challenge:',
+                'Choose your level:',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 40),
@@ -33,7 +31,8 @@ class DifficultyScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const SudokuScreen(difficulty: Difficulty.easy),
+                      builder: (context) =>
+                          const SudokuScreen(difficulty: Difficulty.easy),
                     ),
                   );
                 },
@@ -49,7 +48,8 @@ class DifficultyScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const SudokuScreen(difficulty: Difficulty.medium),
+                      builder: (context) =>
+                          const SudokuScreen(difficulty: Difficulty.medium),
                     ),
                   );
                 },
@@ -65,7 +65,8 @@ class DifficultyScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const SudokuScreen(difficulty: Difficulty.hard),
+                      builder: (context) =>
+                          const SudokuScreen(difficulty: Difficulty.hard),
                     ),
                   );
                 },
