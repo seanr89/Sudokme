@@ -45,6 +45,8 @@ class SudokuScreenState extends State<SudokuScreen> {
   bool _showSolution = false;
   Timer? _timer;
   int _secondsElapsed = 0;
+  int? _flashRow;
+  int? _flashCol;
 
   @override
   void initState() {
@@ -79,6 +81,18 @@ class SudokuScreenState extends State<SudokuScreen> {
     return '$minutes:$remainingSeconds';
   }
 
+  bool _isNumberAvailable(int number) {
+    int count = 0;
+    for (var row in _sudokuLogic.grid) {
+      for (var cell in row) {
+        if (cell == number) {
+          count++;
+        }
+      }
+    }
+    return count < 9;
+  }
+
   void _onNumberSelected(int number) {
     if (_selectedRow != null && _selectedCol != null) {
       if (_initialGrid[_selectedRow!][_selectedCol!]) {
@@ -92,12 +106,14 @@ class SudokuScreenState extends State<SudokuScreen> {
             _timer?.cancel();
             _showWinDialog();
           }
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Correct!'),
-              duration: Duration(seconds: 1),
-            ),
-          );
+          _flashRow = _selectedRow;
+          _flashCol = _selectedCol;
+          Timer(const Duration(seconds: 1), () {
+            setState(() {
+              _flashRow = null;
+              _flashCol = null;
+            });
+          });
         } else {
           _sudokuLogic.mistakes++;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -205,7 +221,15 @@ class SudokuScreenState extends State<SudokuScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                'Time: ${_formatDuration(_secondsElapsed)}',
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+            AspectRatio(
+              aspectRatio: 1.0,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: GridView.builder(
@@ -237,7 +261,9 @@ class SudokuScreenState extends State<SudokuScreen> {
                               width: (row + 1) % 3 == 0 ? 2.0 : 1.0,
                             ),
                           ),
-                          color: _showSolution && !_initialGrid[row][col]
+                          color: _flashRow == row && _flashCol == col
+                              ? Colors.green
+                              : _showSolution && !_initialGrid[row][col]
                               ? Colors.yellow
                               : _selectedRow == row && _selectedCol == col
                               ? Colors.blue.withAlpha(128)
@@ -274,13 +300,6 @@ class SudokuScreenState extends State<SudokuScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text(
-                'Time: ${_formatDuration(_secondsElapsed)}',
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
                   Row(
@@ -290,7 +309,9 @@ class SudokuScreenState extends State<SudokuScreen> {
                       return Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: ElevatedButton(
-                          onPressed: () => _onNumberSelected(number),
+                          onPressed: _isNumberAvailable(number)
+                              ? () => _onNumberSelected(number)
+                              : null,
                           child: Text(number.toString()),
                         ),
                       );
@@ -303,7 +324,9 @@ class SudokuScreenState extends State<SudokuScreen> {
                       return Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: ElevatedButton(
-                          onPressed: () => _onNumberSelected(number),
+                          onPressed: _isNumberAvailable(number)
+                              ? () => _onNumberSelected(number)
+                              : null,
                           child: Text(number.toString()),
                         ),
                       );
