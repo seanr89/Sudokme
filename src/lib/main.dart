@@ -179,7 +179,7 @@ class SudokuScreenState extends State<SudokuScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sudoku'),
+        title: const Text('Game'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
