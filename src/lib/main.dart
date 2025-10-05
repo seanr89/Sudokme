@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sudokme/difficulty_screen.dart';
 import 'package:sudokme/sudoku_logic.dart';
+import 'dart:math';
 
 void main() {
   runApp(const MyApp());
@@ -42,11 +43,14 @@ class SudokuScreenState extends State<SudokuScreen> {
   int? _selectedRow;
   int? _selectedCol;
   late List<List<bool>> _initialGrid;
-  bool _showSolution = false;
+
   Timer? _timer;
   int _secondsElapsed = 0;
   int? _flashRow;
   int? _flashCol;
+  int? _hintRow;
+  int? _hintCol;
+  int _hintsUsed = 0;
 
   @override
   void initState() {
@@ -116,12 +120,7 @@ class SudokuScreenState extends State<SudokuScreen> {
           });
         } else {
           _sudokuLogic.mistakes++;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Incorrect!'),
-              duration: Duration(seconds: 1),
-            ),
-          );
+          _showIncorrectDialog();
           if (_sudokuLogic.mistakes >= 3) {
             _timer?.cancel();
             _showGameOverDialog();
@@ -129,6 +128,24 @@ class SudokuScreenState extends State<SudokuScreen> {
         }
       });
     }
+  }
+
+  void _showIncorrectDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Incorrect!'),
+        content: const Text('That is not the correct number.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showGameOverDialog() {
@@ -161,28 +178,65 @@ class SudokuScreenState extends State<SudokuScreen> {
     );
   }
 
+  void _getHint() {
+    final emptyCells = <List<int>>[];
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        if (_sudokuLogic.grid[i][j] == 0) {
+          emptyCells.add([i, j]);
+        }
+      }
+    }
+
+    if (emptyCells.isNotEmpty) {
+      final random = Random();
+      final randomIndex = random.nextInt(emptyCells.length);
+      final randomCell = emptyCells[randomIndex];
+      final row = randomCell[0];
+      final col = randomCell[1];
+      final solution = _sudokuLogic.getSolution();
+      final number = solution[row][col];
+
+      setState(() {
+        _sudokuLogic.grid[row][col] = number;
+        _hintRow = row;
+        _hintCol = col;
+        _hintsUsed++;
+      });
+
+      Timer(const Duration(seconds: 1), () {
+        setState(() {
+          _hintRow = null;
+          _hintCol = null;
+        });
+      });
+    }
+  }
+
   void _showWinDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('You Win!'),
-        content: const Text('Congratulations, you have solved the puzzle!'),
+        title: const Text('Congratulations!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('You have solved the puzzle.'),
+            Text('Time: ${_formatDuration(_secondsElapsed)}'),
+            Text('Errors: ${_sudokuLogic.mistakes}'),
+            Text('Hints Used: $_hintsUsed'),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () {
-              setState(() {
-                _sudokuLogic.generateSudoku(widget.difficulty);
-                _sudokuLogic.mistakes = 0;
-                _initialGrid = List.generate(
-                  9,
-                  (row) => List.generate(
-                    9,
-                    (col) => _sudokuLogic.grid[row][col] != 0,
-                  ),
-                );
-                _startTimer();
-              });
-              Navigator.of(context).pop();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const DifficultyScreen(),
+                ),
+                (Route<dynamic> route) => false,
+              );
             },
             child: const Text('New Game'),
           ),
@@ -197,16 +251,9 @@ class SudokuScreenState extends State<SudokuScreen> {
       appBar: AppBar(
         title: const Text('Game'),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: TextButton(
-              onPressed: () {
-                setState(() {
-                  _showSolution = true;
-                });
-              },
-              child: const Text('Solve', style: TextStyle(color: Colors.black)),
-            ),
+          TextButton(
+            onPressed: _getHint,
+            child: const Text('Hint'),
           ),
           Center(
             child: Text(
@@ -261,10 +308,10 @@ class SudokuScreenState extends State<SudokuScreen> {
                               width: (row + 1) % 3 == 0 ? 2.0 : 1.0,
                             ),
                           ),
-                          color: _flashRow == row && _flashCol == col
-                              ? Colors.green
-                              : _showSolution && !_initialGrid[row][col]
+                          color: _hintRow == row && _hintCol == col
                               ? Colors.yellow
+                              : _flashRow == row && _flashCol == col
+                              ? Colors.green
                               : _selectedRow == row && _selectedCol == col
                               ? Colors.blue.withAlpha(128)
                               : (_selectedNumber != null &&
@@ -276,11 +323,7 @@ class SudokuScreenState extends State<SudokuScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            _showSolution
-                                ? _sudokuLogic
-                                      .getSolution()[row][col]
-                                      .toString()
-                                : number == 0
+                            number == 0
                                 ? ''
                                 : number.toString(),
                             style: TextStyle(
