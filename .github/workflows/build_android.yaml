@@ -3,9 +3,9 @@ name: Build Flutter Android
 
 on:
   push:
-    branches: [ main, UiUpdates ]
-  pull_request:
     branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
 
 jobs:
   build:
