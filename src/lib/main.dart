@@ -253,17 +253,18 @@ class SudokuScreenState extends State<SudokuScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Game - ${_capitalize(widget.difficulty.toString().split('.').last)}',
+          'Mode - ${_capitalize(widget.difficulty.toString().split('.').last)}',
         ),
         actions: [
-          TextButton(onPressed: _getHint, child: const Text('Hint')),
+          ElevatedButton(onPressed: _getHint, child: const Text('Hint')),
+          const SizedBox(width: 10),
           Center(
             child: Text(
               'Errors: ${_sudokuLogic.mistakes}/3',
               style: const TextStyle(fontSize: 18),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
         ],
       ),
       body: Center(
