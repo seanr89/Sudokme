@@ -38,17 +38,16 @@ class SudokuLogic {
   }
 
   void _removeNumbers(Difficulty difficulty) {
-    //print('removeNumbers called with difficulty: $difficulty');
     int numbersToRemove = 0;
     switch (difficulty) {
       case Difficulty.easy:
-        numbersToRemove = 30;
+        numbersToRemove = 35;
         break;
       case Difficulty.medium:
-        numbersToRemove = 40;
+        numbersToRemove = 45;
         break;
       case Difficulty.hard:
-        numbersToRemove = 50;
+        numbersToRemove = 55;
         break;
     }
 
