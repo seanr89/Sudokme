@@ -278,6 +278,7 @@ class SudokuScreenState extends State<SudokuScreen> {
                 style: const TextStyle(fontSize: 18),
               ),
             ),
+            // grid display should go here
             AspectRatio(
               aspectRatio: 1.0,
               child: Padding(
@@ -286,6 +287,7 @@ class SudokuScreenState extends State<SudokuScreen> {
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 9,
                   ),
+                  physics: const NeverScrollableScrollPhysics(),
                   itemBuilder: (context, index) {
                     final row = index ~/ 9;
                     final col = index % 9;
