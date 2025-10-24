@@ -120,10 +120,11 @@ class SudokuScreenState extends State<SudokuScreen> {
           });
         } else {
           _sudokuLogic.mistakes++;
-          _showIncorrectDialog();
           if (_sudokuLogic.mistakes >= 3) {
             _timer?.cancel();
             _showGameOverDialog();
+          } else {
+            _showIncorrectDialog();
           }
         }
       });
@@ -245,23 +246,25 @@ class SudokuScreenState extends State<SudokuScreen> {
     );
   }
 
+  String _capitalize(String s) => s[0].toUpperCase() + s.substring(1);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Game'),
+        title: Text(
+          'Mode - ${_capitalize(widget.difficulty.toString().split('.').last)}',
+        ),
         actions: [
-          TextButton(
-            onPressed: _getHint,
-            child: const Text('Hint'),
-          ),
+          ElevatedButton(onPressed: _getHint, child: const Text('Hint')),
+          const SizedBox(width: 10),
           Center(
             child: Text(
               'Errors: ${_sudokuLogic.mistakes}/3',
               style: const TextStyle(fontSize: 18),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
         ],
       ),
       body: Center(
@@ -275,6 +278,7 @@ class SudokuScreenState extends State<SudokuScreen> {
                 style: const TextStyle(fontSize: 18),
               ),
             ),
+            // grid display should go here
             AspectRatio(
               aspectRatio: 1.0,
               child: Padding(
@@ -283,6 +287,7 @@ class SudokuScreenState extends State<SudokuScreen> {
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 9,
                   ),
+                  physics: const NeverScrollableScrollPhysics(),
                   itemBuilder: (context, index) {
                     final row = index ~/ 9;
                     final col = index % 9;
@@ -323,9 +328,7 @@ class SudokuScreenState extends State<SudokuScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            number == 0
-                                ? ''
-                                : number.toString(),
+                            number == 0 ? '' : number.toString(),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: _initialGrid[row][col]
@@ -347,30 +350,51 @@ class SudokuScreenState extends State<SudokuScreen> {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(5, (index) {
+                    children: List.generate(3, (index) {
                       final number = index + 1;
-                      return Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: ElevatedButton(
-                          onPressed: _isNumberAvailable(number)
-                              ? () => _onNumberSelected(number)
-                              : null,
-                          child: Text(number.toString()),
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: ElevatedButton(
+                            onPressed: _isNumberAvailable(number)
+                                ? () => _onNumberSelected(number)
+                                : null,
+                            child: Text(number.toString()),
+                          ),
                         ),
                       );
                     }),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(4, (index) {
-                      final number = index + 6;
-                      return Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: ElevatedButton(
-                          onPressed: _isNumberAvailable(number)
-                              ? () => _onNumberSelected(number)
-                              : null,
-                          child: Text(number.toString()),
+                    children: List.generate(3, (index) {
+                      final number = index + 4;
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: ElevatedButton(
+                            onPressed: _isNumberAvailable(number)
+                                ? () => _onNumberSelected(number)
+                                : null,
+                            child: Text(number.toString()),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(3, (index) {
+                      final number = index + 7;
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: ElevatedButton(
+                            onPressed: _isNumberAvailable(number)
+                                ? () => _onNumberSelected(number)
+                                : null,
+                            child: Text(number.toString()),
+                          ),
                         ),
                       );
                     }),
