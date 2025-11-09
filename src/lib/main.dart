@@ -1,13 +1,27 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:sudokme/difficulty_screen.dart';
 import 'package:sudokme/sudoku_logic.dart';
 import 'dart:math';
+import 'package:firebase_core/firebase_core.dart';
+import 'auth_service.dart';
+import 'firebase_options.dart';
+import 'login_screen.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(
+    StreamProvider<User?>.value(
+      value: AuthService().user,
+      initialData: null,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -23,8 +37,22 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.blue[50],
         textTheme: GoogleFonts.latoTextTheme(Theme.of(context).textTheme),
       ),
-      home: const DifficultyScreen(),
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Provider.of<User?>(context);
+    if (user == null) {
+      return LoginScreen();
+    } else {
+      return const DifficultyScreen();
+    }
   }
 }
 

@@ -1,7 +1,7 @@
 # Sudoku App Requirements
 
 ## 1. Project Setup
-- Create a new Flutter project.
+- A flutter based project to play 9x9 Sudoku games
 
 ## 2. Core Sudoku Logic (Dart)
 - Implement a 9x9 grid for the Sudoku board.
