@@ -1,0 +1,3 @@
+src/lib/firebase_options.dart
+src/firebase.json
+src/android/app/google-services.json
