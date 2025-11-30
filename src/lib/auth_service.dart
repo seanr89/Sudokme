@@ -4,29 +4,37 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Sign in with email and password
-  Future<UserCredential?> signInWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential?> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
-      return await _auth.signInWithEmailAndPassword(email: email, password: password);
-    } on FirebaseAuthException catch (e) {
+      return await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } on FirebaseAuthException catch (_) {
       // Handle specific Firebase auth exceptions
-      print('Failed to sign in with Email & Password: ${e.message}');
       return null;
-    } catch (e) {
-      print('An unexpected error occurred: $e');
+    } catch (_) {
       return null;
     }
   }
 
   // Register with email and password
-  Future<UserCredential?> registerWithEmailAndPassword(String email, String password) async {
+  Future<UserCredential?> registerWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(email: email, password: password);
-    } on FirebaseAuthException catch (e) {
+      return await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } on FirebaseAuthException catch (_) {
       // Handle specific Firebase auth exceptions
-      print('Failed to register with Email & Password: ${e.message}');
       return null;
-    } catch (e) {
-      print('An unexpected error occurred: $e');
+    } catch (_) {
       return null;
     }
   }

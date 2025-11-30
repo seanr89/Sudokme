@@ -1,23 +1,54 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'auth_service.dart';
 import 'difficulty_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  LoginScreenState createState() => LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
+
+  void _handleSignInSuccess() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const DifficultyScreen(),
+      ),
+    );
+  }
+
+  void _handleRegistrationSuccess() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Registration successful!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const DifficultyScreen(),
+      ),
+    );
+  }
+
+  void _handleRegistrationFailure() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Registration failed. Please try again.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login'),
+        title: const Text('Login'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -26,46 +57,40 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             TextField(
               controller: _emailController,
-              decoration: InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
             TextField(
               controller: _passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
+              decoration: const InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
                 final user = await _authService.signInWithEmailAndPassword(
                   _emailController.text,
                   _passwordController.text,
                 );
-                if (user != null) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (context) => DifficultyScreen(),
-                    ),
-                  );
+                if (user != null && mounted) {
+                  _handleSignInSuccess();
                 }
               },
-              child: Text('Sign In'),
+              child: const Text('Sign In'),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () async {
                 final user = await _authService.registerWithEmailAndPassword(
                   _emailController.text,
                   _passwordController.text,
                 );
-                if (user != null) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (context) => DifficultyScreen(),
-                    ),
-                  );
+                if (user != null && mounted) {
+                  _handleRegistrationSuccess();
+                } else if (mounted) {
+                  _handleRegistrationFailure();
                 }
               },
-              child: Text('Register'),
+              child: const Text('Register'),
             ),
           ],
         ),

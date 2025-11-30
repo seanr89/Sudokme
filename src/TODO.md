@@ -13,9 +13,9 @@
     - [ ] Add Google Sign-In.
     - [ ] Add Apple Sign-In.
 - [ ] **Cloud Game State:**
-    - [ ] Save game progress to Firestore for a user when finished.
+    - [x] Save game progress to Firestore for a user when finished.
     - [ ] Allow users to resume games across devices.
-    - [ ] Provide a user history page of there last 20 games completed or failed
+    - [x] Provide a user history page of there last 20 games completed or failed via an app drawer
 - [ ] **Leaderboards:**
     - [ ] Design and implement a global leaderboard for top scores/times.
     - [ ] Enrich leaderboard with daily stats and history for each user.
