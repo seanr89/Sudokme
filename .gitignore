@@ -1,1 +1,6 @@
 src/.env
+src/lib/firebase_options.dart
+src/firebase.json
+src/android/app/google-services.json
+src/.env
+.DS_Store

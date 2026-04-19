@@ -1,15 +1,32 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:sudokme/difficulty_screen.dart';
 import 'package:sudokme/start_screen.dart';
 import 'package:sudokme/sudoku_logic.dart';
 import 'package:sudokme/history_manager.dart';
 import 'dart:math';
+import 'package:firebase_core/firebase_core.dart';
+import 'auth_service.dart';
+import 'firebase_options.dart';
+import 'login_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(
+    StreamProvider<User?>.value(
+      value: AuthService().user,
+      initialData: null,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -26,8 +43,22 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue[300]!),
         textTheme: GoogleFonts.latoTextTheme(Theme.of(context).textTheme),
       ),
-      home: const StartScreen(),
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Provider.of<User?>(context);
+    if (user == null) {
+      return const LoginScreen();
+    } else {
+      return const DifficultyScreen();
+    }
   }
 }
 
@@ -54,6 +85,7 @@ class SudokuScreenState extends State<SudokuScreen> {
   int? _hintRow;
   int? _hintCol;
   int _hintsUsed = 0;
+  late List<List<int>> _initialPuzzle;
 
   @override
   void initState() {
@@ -62,6 +94,10 @@ class SudokuScreenState extends State<SudokuScreen> {
     _initialGrid = List.generate(
       9,
       (row) => List.generate(9, (col) => _sudokuLogic.grid[row][col] != 0),
+    );
+    _initialPuzzle = List.generate(
+      9,
+      (row) => List.from(_sudokuLogic.grid[row]),
     );
     _startTimer();
   }
@@ -152,19 +188,15 @@ class SudokuScreenState extends State<SudokuScreen> {
     );
   }
 
-  void _saveGameHistory(bool won) {
-    final item = GameHistoryItem(
-      date: DateTime.now(),
+  Future<void> _saveGameToFirestore(bool won) async {
+    await _sudokuLogic.saveGame(
       won: won,
-      difficulty: _capitalize(widget.difficulty.toString().split('.').last),
-      timeSeconds: _secondsElapsed,
-      finalGrid: _sudokuLogic.grid,
-      initialGridFlags: _initialGrid,
+      timeElapsed: _secondsElapsed,
+      mistakes: _sudokuLogic.mistakes,
+      hintsUsed: _hintsUsed,
+      difficulty: widget.difficulty,
     );
-    HistoryManager().saveGame(item);
   }
-
-  String _capitalize(String s) => s[0].toUpperCase() + s.substring(1);
 
   void _showGameOverDialog() {
     _saveGameHistory(false);
@@ -172,25 +204,26 @@ class SudokuScreenState extends State<SudokuScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Game Over'),
-        content: const Text('You have made 3 mistakes.'),
+        content: const Text(
+          'You have made 3 mistakes. Would you like to save your game?',
+        ),
         actions: [
           TextButton(
-            onPressed: () {
-              setState(() {
-                _sudokuLogic.generateSudoku(widget.difficulty);
-                _sudokuLogic.mistakes = 0;
-                _initialGrid = List.generate(
-                  9,
-                  (row) => List.generate(
-                    9,
-                    (col) => _sudokuLogic.grid[row][col] != 0,
-                  ),
-                );
-                _startTimer();
-              });
-              Navigator.of(context).pop();
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              await _saveGameToFirestore(false);
+              if (!mounted) return;
+              navigator.pop();
+              _startNewGame();
             },
-            child: const Text('New Game'),
+            child: const Text('Yes'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _startNewGame();
+            },
+            child: const Text('No'),
           ),
         ],
       ),
@@ -242,13 +275,29 @@ class SudokuScreenState extends State<SudokuScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('You have solved the puzzle.'),
+            const Text(
+              'You have solved the puzzle. Would you like to save your game?',
+            ),
             Text('Time: ${_formatDuration(_secondsElapsed)}'),
             Text('Errors: ${_sudokuLogic.mistakes}'),
             Text('Hints Used: $_hintsUsed'),
           ],
         ),
         actions: [
+          TextButton(
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              await _saveGameToFirestore(true);
+              if (!mounted) return;
+              navigator.pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const DifficultyScreen(),
+                ),
+                (Route<dynamic> route) => false,
+              );
+            },
+            child: const Text('Yes'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pushAndRemoveUntil(
@@ -258,21 +307,37 @@ class SudokuScreenState extends State<SudokuScreen> {
                 (Route<dynamic> route) => false,
               );
             },
-            child: const Text('New Game'),
+            child: const Text('No'),
           ),
         ],
       ),
     );
   }
 
+  void _startNewGame() {
+    setState(() {
+      _sudokuLogic.generateSudoku(widget.difficulty);
+      _sudokuLogic.mistakes = 0;
+      _initialGrid = List.generate(
+        9,
+        (row) => List.generate(9, (col) => _sudokuLogic.grid[row][col] != 0),
+      );
+      _initialPuzzle = List.generate(
+        9,
+        (row) => List.from(_sudokuLogic.grid[row]),
+      );
+      _startTimer();
+    });
+  }
+
+  String _capitalize(String s) => s[0].toUpperCase() + s.substring(1);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          _capitalize(widget.difficulty.toString().split('.').last),
-        ),
+        title: Text(_capitalize(widget.difficulty.toString().split('.').last)),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.blue[800],
@@ -291,7 +356,10 @@ class SudokuScreenState extends State<SudokuScreen> {
           children: [
             // Top Status Bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 12.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -305,9 +373,10 @@ class SudokuScreenState extends State<SudokuScreen> {
                       Text(
                         '${_sudokuLogic.mistakes}/3',
                         style: TextStyle(
-                            color: Colors.blue[800],
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold),
+                          color: Colors.blue[800],
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -321,9 +390,10 @@ class SudokuScreenState extends State<SudokuScreen> {
                       Text(
                         _formatDuration(_secondsElapsed),
                         style: TextStyle(
-                            color: Colors.blue[800],
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold),
+                          color: Colors.blue[800],
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -342,9 +412,10 @@ class SudokuScreenState extends State<SudokuScreen> {
                       border: Border.all(color: Colors.blue[800]!, width: 2.0),
                     ),
                     child: GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 9,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 9,
+                          ),
                       physics: const NeverScrollableScrollPhysics(),
                       itemBuilder: (context, index) {
                         final row = index ~/ 9;
@@ -364,11 +435,15 @@ class SudokuScreenState extends State<SudokuScreen> {
                               border: Border(
                                 right: BorderSide(
                                   color: Colors.blue[800]!,
-                                  width: (col + 1) % 3 == 0 && col != 8 ? 2.0 : 0.5,
+                                  width: (col + 1) % 3 == 0 && col != 8
+                                      ? 2.0
+                                      : 0.5,
                                 ),
                                 bottom: BorderSide(
                                   color: Colors.blue[800]!,
-                                  width: (row + 1) % 3 == 0 && row != 8 ? 2.0 : 0.5,
+                                  width: (row + 1) % 3 == 0 && row != 8
+                                      ? 2.0
+                                      : 0.5,
                                 ),
                               ),
                               color: _hintRow == row && _hintCol == col
