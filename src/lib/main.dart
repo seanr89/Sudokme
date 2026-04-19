@@ -1,13 +1,30 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:sudokme/difficulty_screen.dart';
 import 'package:sudokme/sudoku_logic.dart';
 import 'dart:math';
+import 'package:firebase_core/firebase_core.dart';
+import 'auth_service.dart';
+import 'firebase_options.dart';
+import 'login_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(
+    StreamProvider<User?>.value(
+      value: AuthService().user,
+      initialData: null,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -23,8 +40,22 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.blue[50],
         textTheme: GoogleFonts.latoTextTheme(Theme.of(context).textTheme),
       ),
-      home: const DifficultyScreen(),
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Provider.of<User?>(context);
+    if (user == null) {
+      return const LoginScreen();
+    } else {
+      return const DifficultyScreen();
+    }
   }
 }
 
@@ -51,6 +82,7 @@ class SudokuScreenState extends State<SudokuScreen> {
   int? _hintRow;
   int? _hintCol;
   int _hintsUsed = 0;
+  late List<List<int>> _initialPuzzle;
 
   @override
   void initState() {
@@ -59,6 +91,10 @@ class SudokuScreenState extends State<SudokuScreen> {
     _initialGrid = List.generate(
       9,
       (row) => List.generate(9, (col) => _sudokuLogic.grid[row][col] != 0),
+    );
+    _initialPuzzle = List.generate(
+      9,
+      (row) => List.from(_sudokuLogic.grid[row]),
     );
     _startTimer();
   }
@@ -149,30 +185,41 @@ class SudokuScreenState extends State<SudokuScreen> {
     );
   }
 
+  Future<void> _saveGameToFirestore(bool won) async {
+    await _sudokuLogic.saveGame(
+      won: won,
+      timeElapsed: _secondsElapsed,
+      mistakes: _sudokuLogic.mistakes,
+      hintsUsed: _hintsUsed,
+      difficulty: widget.difficulty,
+    );
+  }
+
   void _showGameOverDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Game Over'),
-        content: const Text('You have made 3 mistakes.'),
+        content: const Text(
+          'You have made 3 mistakes. Would you like to save your game?',
+        ),
         actions: [
           TextButton(
-            onPressed: () {
-              setState(() {
-                _sudokuLogic.generateSudoku(widget.difficulty);
-                _sudokuLogic.mistakes = 0;
-                _initialGrid = List.generate(
-                  9,
-                  (row) => List.generate(
-                    9,
-                    (col) => _sudokuLogic.grid[row][col] != 0,
-                  ),
-                );
-                _startTimer();
-              });
-              Navigator.of(context).pop();
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              await _saveGameToFirestore(false);
+              if (!mounted) return;
+              navigator.pop();
+              _startNewGame();
             },
-            child: const Text('New Game'),
+            child: const Text('Yes'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _startNewGame();
+            },
+            child: const Text('No'),
           ),
         ],
       ),
@@ -223,13 +270,29 @@ class SudokuScreenState extends State<SudokuScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('You have solved the puzzle.'),
+            const Text(
+              'You have solved the puzzle. Would you like to save your game?',
+            ),
             Text('Time: ${_formatDuration(_secondsElapsed)}'),
             Text('Errors: ${_sudokuLogic.mistakes}'),
             Text('Hints Used: $_hintsUsed'),
           ],
         ),
         actions: [
+          TextButton(
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              await _saveGameToFirestore(true);
+              if (!mounted) return;
+              navigator.pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const DifficultyScreen(),
+                ),
+                (Route<dynamic> route) => false,
+              );
+            },
+            child: const Text('Yes'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pushAndRemoveUntil(
@@ -239,11 +302,27 @@ class SudokuScreenState extends State<SudokuScreen> {
                 (Route<dynamic> route) => false,
               );
             },
-            child: const Text('New Game'),
+            child: const Text('No'),
           ),
         ],
       ),
     );
+  }
+
+  void _startNewGame() {
+    setState(() {
+      _sudokuLogic.generateSudoku(widget.difficulty);
+      _sudokuLogic.mistakes = 0;
+      _initialGrid = List.generate(
+        9,
+        (row) => List.generate(9, (col) => _sudokuLogic.grid[row][col] != 0),
+      );
+      _initialPuzzle = List.generate(
+        9,
+        (row) => List.from(_sudokuLogic.grid[row]),
+      );
+      _startTimer();
+    });
   }
 
   String _capitalize(String s) => s[0].toUpperCase() + s.substring(1);

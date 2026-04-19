@@ -1,5 +1,8 @@
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:sudokme/difficulty_screen.dart';
 
 class SudokuLogic {
@@ -132,5 +135,34 @@ class SudokuLogic {
 
   List<List<int>> getSolution() {
     return solutionGrid;
+  }
+
+  Future<void> saveGame({
+    required bool won,
+    required int timeElapsed,
+    required int mistakes,
+    required int hintsUsed,
+    required Difficulty difficulty,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final firestore = FirebaseFirestore.instanceFor(
+        app: Firebase.app(),
+        databaseId: 'game-store',
+      );
+      await firestore.collection('games').add({
+        'userId': user.uid,
+        'won': won,
+        'timeElapsed': timeElapsed,
+        'mistakes': mistakes,
+        'hintsUsed': hintsUsed,
+        'difficulty': difficulty.toString().split('.').last,
+        'timestamp': FieldValue.serverTimestamp(),
+        'solution': solutionGrid.expand((row) => row).toList(),
+      });
+      // .catchError((error) {
+      //   print('Error saving game: $error');
+      // });
+    }
   }
 }
