@@ -58,7 +58,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         stream: _gamesStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            print('Error loading game history: ${snapshot.error}');
+            debugPrint('Error loading game history: ${snapshot.error}');
             return const Center(child: Text('Something went wrong'));
           }
 

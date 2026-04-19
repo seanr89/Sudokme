@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:sudokme/difficulty_screen.dart';
 import 'package:sudokme/sudoku_logic.dart';
+import 'package:sudokme/history_manager.dart';
 import 'dart:math';
 import 'package:firebase_core/firebase_core.dart';
 import 'auth_service.dart';
@@ -37,7 +37,8 @@ class MyApp extends StatelessWidget {
       title: 'Sudoku',
       theme: ThemeData(
         primaryColor: Colors.blue[800],
-        scaffoldBackgroundColor: Colors.blue[50],
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue[300]!),
         textTheme: GoogleFonts.latoTextTheme(Theme.of(context).textTheme),
       ),
       home: const AuthWrapper(),
@@ -82,7 +83,6 @@ class SudokuScreenState extends State<SudokuScreen> {
   int? _hintRow;
   int? _hintCol;
   int _hintsUsed = 0;
-  late List<List<int>> _initialPuzzle;
 
   @override
   void initState() {
@@ -91,10 +91,6 @@ class SudokuScreenState extends State<SudokuScreen> {
     _initialGrid = List.generate(
       9,
       (row) => List.generate(9, (col) => _sudokuLogic.grid[row][col] != 0),
-    );
-    _initialPuzzle = List.generate(
-      9,
-      (row) => List.from(_sudokuLogic.grid[row]),
     );
     _startTimer();
   }
@@ -195,7 +191,20 @@ class SudokuScreenState extends State<SudokuScreen> {
     );
   }
 
+  void _saveGameHistory(bool won) {
+    final historyItem = GameHistoryItem(
+      date: DateTime.now(),
+      won: won,
+      difficulty: widget.difficulty.toString().split('.').last,
+      timeSeconds: _secondsElapsed,
+      finalGrid: _sudokuLogic.grid,
+      initialGridFlags: _initialGrid,
+    );
+    HistoryManager().saveGame(historyItem);
+  }
+
   void _showGameOverDialog() {
+    _saveGameHistory(false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -262,6 +271,7 @@ class SudokuScreenState extends State<SudokuScreen> {
   }
 
   void _showWinDialog() {
+    _saveGameHistory(true);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -317,10 +327,6 @@ class SudokuScreenState extends State<SudokuScreen> {
         9,
         (row) => List.generate(9, (col) => _sudokuLogic.grid[row][col] != 0),
       );
-      _initialPuzzle = List.generate(
-        9,
-        (row) => List.from(_sudokuLogic.grid[row]),
-      );
       _startTimer();
     });
   }
@@ -330,158 +336,204 @@ class SudokuScreenState extends State<SudokuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          'Mode - ${_capitalize(widget.difficulty.toString().split('.').last)}',
-        ),
+        title: Text(_capitalize(widget.difficulty.toString().split('.').last)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.blue[800],
         actions: [
-          ElevatedButton(onPressed: _getHint, child: const Text('Hint')),
-          const SizedBox(width: 10),
-          Center(
-            child: Text(
-              'Errors: ${_sudokuLogic.mistakes}/3',
-              style: const TextStyle(fontSize: 18),
-            ),
+          IconButton(
+            icon: const Icon(Icons.lightbulb_outline),
+            onPressed: _getHint,
+            color: Colors.blue[600],
+            tooltip: 'Hint',
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 8),
         ],
       ),
-      body: Center(
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Top Status Bar
             Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                'Time: ${_formatDuration(_secondsElapsed)}',
-                style: const TextStyle(fontSize: 18),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 12.0,
               ),
-            ),
-            // grid display should go here
-            AspectRatio(
-              aspectRatio: 1.0,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 9,
-                  ),
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    final row = index ~/ 9;
-                    final col = index % 9;
-                    final number = _sudokuLogic.grid[row][col];
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedRow = row;
-                          _selectedCol = col;
-                          _selectedNumber = _sudokuLogic.grid[row][col];
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            top: BorderSide(width: (row == 0) ? 2.0 : 1.0),
-                            left: BorderSide(width: (col == 0) ? 2.0 : 1.0),
-                            right: BorderSide(
-                              width: (col + 1) % 3 == 0 ? 2.0 : 1.0,
-                            ),
-                            bottom: BorderSide(
-                              width: (row + 1) % 3 == 0 ? 2.0 : 1.0,
-                            ),
-                          ),
-                          color: _hintRow == row && _hintCol == col
-                              ? Colors.yellow
-                              : _flashRow == row && _flashCol == col
-                              ? Colors.green
-                              : _selectedRow == row && _selectedCol == col
-                              ? Colors.blue.withAlpha(128)
-                              : (_selectedNumber != null &&
-                                    _selectedNumber != 0 &&
-                                    _selectedNumber ==
-                                        _sudokuLogic.grid[row][col])
-                              ? Colors.blue.withAlpha(64)
-                              : Colors.white,
-                        ),
-                        child: Center(
-                          child: Text(
-                            number == 0 ? '' : number.toString(),
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: _initialGrid[row][col]
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Errors',
+                        style: TextStyle(color: Colors.blue[400], fontSize: 14),
+                      ),
+                      Text(
+                        '${_sudokuLogic.mistakes}/3',
+                        style: TextStyle(
+                          color: Colors.blue[800],
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    );
-                  },
-                  itemCount: 81,
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Time',
+                        style: TextStyle(color: Colors.blue[400], fontSize: 14),
+                      ),
+                      Text(
+                        _formatDuration(_secondsElapsed),
+                        style: TextStyle(
+                          color: Colors.blue[800],
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Grid
+            Expanded(
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: 1.0,
+                  child: Container(
+                    margin: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.blue[800]!, width: 2.0),
+                    ),
+                    child: GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 9,
+                          ),
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        final row = index ~/ 9;
+                        final col = index % 9;
+                        final number = _sudokuLogic.grid[row][col];
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedRow = row;
+                              _selectedCol = col;
+                              _selectedNumber = _sudokuLogic.grid[row][col];
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border(
+                                right: BorderSide(
+                                  color: Colors.blue[800]!,
+                                  width: (col + 1) % 3 == 0 && col != 8
+                                      ? 2.0
+                                      : 0.5,
+                                ),
+                                bottom: BorderSide(
+                                  color: Colors.blue[800]!,
+                                  width: (row + 1) % 3 == 0 && row != 8
+                                      ? 2.0
+                                      : 0.5,
+                                ),
+                              ),
+                              color: _hintRow == row && _hintCol == col
+                                  ? Colors.yellow[100]
+                                  : _flashRow == row && _flashCol == col
+                                  ? Colors.green[100]
+                                  : _selectedRow == row && _selectedCol == col
+                                  ? Colors.blue[200]
+                                  : (_selectedNumber != null &&
+                                        _selectedNumber != 0 &&
+                                        _selectedNumber ==
+                                            _sudokuLogic.grid[row][col])
+                                  ? Colors.blue[50]
+                                  : Colors.white,
+                            ),
+                            child: Center(
+                              child: Text(
+                                number == 0 ? '' : number.toString(),
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  color: _initialGrid[row][col]
+                                      ? Colors.blue[900]
+                                      : Colors.blue[600],
+                                  fontWeight: _initialGrid[row][col]
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      itemCount: 81,
+                    ),
+                  ),
                 ),
               ),
             ),
+
+            // Number Pad
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 24.0),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(3, (index) {
+                    children: List.generate(5, (index) {
                       final number = index + 1;
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: ElevatedButton(
-                            onPressed: _isNumberAvailable(number)
-                                ? () => _onNumberSelected(number)
-                                : null,
-                            child: Text(number.toString()),
-                          ),
-                        ),
-                      );
+                      return _buildNumberButton(number);
                     }),
                   ),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(3, (index) {
-                      final number = index + 4;
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: ElevatedButton(
-                            onPressed: _isNumberAvailable(number)
-                                ? () => _onNumberSelected(number)
-                                : null,
-                            child: Text(number.toString()),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(3, (index) {
-                      final number = index + 7;
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: ElevatedButton(
-                            onPressed: _isNumberAvailable(number)
-                                ? () => _onNumberSelected(number)
-                                : null,
-                            child: Text(number.toString()),
-                          ),
-                        ),
-                      );
+                    children: List.generate(4, (index) {
+                      final number = index + 6;
+                      return _buildNumberButton(number);
                     }),
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNumberButton(int number) {
+    bool available = _isNumberAvailable(number);
+    return SizedBox(
+      width: 60,
+      height: 60,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue[50],
+          foregroundColor: Colors.blue[800],
+          disabledBackgroundColor: Colors.grey[100],
+          disabledForegroundColor: Colors.grey[400],
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          padding: EdgeInsets.zero,
+        ),
+        onPressed: available ? () => _onNumberSelected(number) : null,
+        child: Text(
+          number.toString(),
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w500),
         ),
       ),
     );

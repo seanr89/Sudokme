@@ -1,0 +1,28 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "sudokufire-dfa4f",
+          "appId": "1:73679107593:android:90f6c8b2ef77412f882ad8",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "sudokufire-dfa4f",
+          "configurations": {
+            "android": "1:73679107593:android:90f6c8b2ef77412f882ad8",
+            "web": "1:73679107593:web:cf5d54c0aab581a7882ad8"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "database": "sudokme-db",
+    "location": "nam5",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

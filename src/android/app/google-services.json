@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "73679107593",
+    "project_id": "sudokufire-dfa4f",
+    "storage_bucket": "sudokufire-dfa4f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:73679107593:android:90f6c8b2ef77412f882ad8",
+        "android_client_info": {
+          "package_name": "com.example.sudokme"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqryPwY4F2NBilCmuEO7KYdrAGaXFIGGo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
