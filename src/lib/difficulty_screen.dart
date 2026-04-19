@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:sudokme/auth_service.dart';
 import 'package:sudokme/history_screen.dart';
 import 'package:sudokme/main.dart';
-import 'package:sudokme/history_screen.dart';
 
 enum Difficulty { easy, medium, hard }
 

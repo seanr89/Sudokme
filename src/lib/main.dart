@@ -1,12 +1,10 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:sudokme/difficulty_screen.dart';
-import 'package:sudokme/start_screen.dart';
 import 'package:sudokme/sudoku_logic.dart';
 import 'package:sudokme/history_manager.dart';
 import 'dart:math';
@@ -85,7 +83,6 @@ class SudokuScreenState extends State<SudokuScreen> {
   int? _hintRow;
   int? _hintCol;
   int _hintsUsed = 0;
-  late List<List<int>> _initialPuzzle;
 
   @override
   void initState() {
@@ -94,10 +91,6 @@ class SudokuScreenState extends State<SudokuScreen> {
     _initialGrid = List.generate(
       9,
       (row) => List.generate(9, (col) => _sudokuLogic.grid[row][col] != 0),
-    );
-    _initialPuzzle = List.generate(
-      9,
-      (row) => List.from(_sudokuLogic.grid[row]),
     );
     _startTimer();
   }
@@ -196,6 +189,18 @@ class SudokuScreenState extends State<SudokuScreen> {
       hintsUsed: _hintsUsed,
       difficulty: widget.difficulty,
     );
+  }
+
+  void _saveGameHistory(bool won) {
+    final historyItem = GameHistoryItem(
+      date: DateTime.now(),
+      won: won,
+      difficulty: widget.difficulty.toString().split('.').last,
+      timeSeconds: _secondsElapsed,
+      finalGrid: _sudokuLogic.grid,
+      initialGridFlags: _initialGrid,
+    );
+    HistoryManager().saveGame(historyItem);
   }
 
   void _showGameOverDialog() {
@@ -321,10 +326,6 @@ class SudokuScreenState extends State<SudokuScreen> {
       _initialGrid = List.generate(
         9,
         (row) => List.generate(9, (col) => _sudokuLogic.grid[row][col] != 0),
-      );
-      _initialPuzzle = List.generate(
-        9,
-        (row) => List.from(_sudokuLogic.grid[row]),
       );
       _startTimer();
     });
